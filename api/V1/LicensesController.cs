@@ -5,20 +5,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace api.V1;
 
 [Route("api/licenses")]
-public class LicensesController : ApiController
+public class LicensesController(ILicenseService licenseService) : ApiController
 {
-    private readonly ILicenseService _licenseService;
-
-    public LicensesController(ILicenseService licenseService)
-    {
-        _licenseService = licenseService;
-    }
-
     [HttpPost("validate")]
     [AllowAnonymous]
     public async Task<IActionResult> Validate([FromBody] LicenseValidateRequest request)
     {
-        var result = await _licenseService.ValidateAsync(request.Domain, request.LicenseKey);
+        var result = await licenseService.ValidateAsync(request.Domain, request.LicenseKey);
         return Ok(new { valid = result.Valid, expiresAt = result.ExpiresAt });
     }
 }

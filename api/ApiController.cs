@@ -5,7 +5,7 @@ namespace api;
 [ApiController]
 public abstract class ApiController : ControllerBase
 {
-    protected string? GetRequestId()
+    private string? GetRequestId()
     {
         return HttpContext.Items["RequestId"] as string;
     }

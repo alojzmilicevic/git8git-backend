@@ -18,7 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<AuthSettings>(provider =>
 {
     var settings = new AuthSettings();
-    builder.Configuration.GetSection("Auth").Bind(settings);
+    builder.Configuration.GetSection("AuthSettings").Bind(settings);
     return settings;
 });
 
@@ -32,7 +32,7 @@ builder.Services.AddSingleton<DynamoDbSettings>(provider =>
 builder.Services.AddSingleton<GitHubSettings>(provider =>
 {
     var settings = new GitHubSettings();
-    builder.Configuration.GetSection("GitHub").Bind(settings);
+    builder.Configuration.GetSection("GitHubSettings").Bind(settings);
     return settings;
 });
 
@@ -44,7 +44,7 @@ builder.Services.AddFeature<LicensingFeature>();
 builder.Services.AddFeature<UsersFeature>();
 
 var authSettings = new AuthSettings();
-builder.Configuration.GetSection("Auth").Bind(authSettings);
+builder.Configuration.GetSection("AuthSettings").Bind(authSettings);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

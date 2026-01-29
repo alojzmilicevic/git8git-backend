@@ -12,11 +12,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="131bf973-2f01-44b3-9245-347a1227f49a" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/.idea.git8git-backend/.idea/indexLayout.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/.idea.git8git-backend/.idea/projectSettingsUpdater.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/.idea.git8git-backend/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/git8git-backend.sln" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.git8git-backend/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.git8git-backend/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/ApiController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/api/ApiController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/Main.cs" beforeDir="false" afterPath="$PROJECT_DIR$/api/Main.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/Properties/launchSettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/api/Properties/launchSettings.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/V1/AuthController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/api/V1/AuthController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/V1/GitHubController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/api/V1/GitHubController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/V1/LicensesController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/api/V1/LicensesController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/api.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/api/api.csproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/appsettings.Development.json" beforeDir="false" afterPath="$PROJECT_DIR$/api/appsettings.Development.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/appsettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/api/appsettings.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/Auth/CryptoService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Auth/CryptoService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/Auth/JwtService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Auth/JwtService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/Feature.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Feature.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/GitHub/GitHubService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/GitHub/GitHubService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/Licensing/DomainsStore.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Licensing/DomainsStore.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/Licensing/LicenseService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Licensing/LicenseService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/Users/UsersStore.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Users/UsersStore.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,6 +40,9 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/ddfe5f2cab585726db85fc046e76ea5725f69d647c242379a11c6da8029c727/ClaimsPrincipal.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
   <component name="KubernetesApiProvider"><![CDATA[{
@@ -43,7 +58,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    ".NET Launch Settings Profile.api: http.executor": "Run",
+    ".NET Launch Settings Profile.api: http.executor": "Debug",
     ".NET Launch Settings Profile.api: https.executor": "Run",
     ".NET Project.api.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
@@ -173,7 +188,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1769677518592</updated>
-      <workItem from="1769677519837" duration="3896000" />
+      <workItem from="1769677519837" duration="9449000" />
     </task>
     <servers />
   </component>

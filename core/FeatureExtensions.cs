@@ -4,7 +4,7 @@ namespace core;
 
 public static class FeatureExtensions
 {
-    private static readonly List<Feature> RegisteredFeatures = new();
+    private static readonly List<Feature> RegisteredFeatures = [];
 
     public static IServiceCollection AddFeature<TFeature>(this IServiceCollection services) where TFeature : Feature, new()
     {

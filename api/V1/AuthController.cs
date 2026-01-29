@@ -10,26 +10,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace api.V1;
 
 [Route("auth")]
-public class AuthController : ApiController
+public class AuthController(
+    IGitHubService gitHubService,
+    IUsersStore usersStore,
+    ICryptoService cryptoService,
+    IJwtService jwtService)
+    : ApiController
 {
     private static readonly ConcurrentDictionary<string, DateTime> OAuthStates = new();
-    
-    private readonly IGitHubService _gitHubService;
-    private readonly IUsersStore _usersStore;
-    private readonly ICryptoService _cryptoService;
-    private readonly IJwtService _jwtService;
-
-    public AuthController(
-        IGitHubService gitHubService,
-        IUsersStore usersStore,
-        ICryptoService cryptoService,
-        IJwtService jwtService)
-    {
-        _gitHubService = gitHubService;
-        _usersStore = usersStore;
-        _cryptoService = cryptoService;
-        _jwtService = jwtService;
-    }
 
     [HttpGet("github")]
     public IActionResult InitiateGitHubOAuth()
@@ -39,7 +27,7 @@ public class AuthController : ApiController
         var state = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
         OAuthStates[state] = DateTime.UtcNow;
 
-        var authUrl = _gitHubService.GetAuthorizationUrl(state);
+        var authUrl = gitHubService.GetAuthorizationUrl(state);
         return Redirect(authUrl);
     }
 
@@ -64,13 +52,13 @@ public class AuthController : ApiController
             return Content(GenerateErrorHtml("Invalid or expired state"), "text/html");
         }
 
-        var accessToken = await _gitHubService.ExchangeCodeForTokenAsync(code);
-        var gitHubUser = await _gitHubService.GetUserAsync(accessToken);
+        var accessToken = await gitHubService.ExchangeCodeForTokenAsync(code);
+        var gitHubUser = await gitHubService.GetUserAsync(accessToken);
 
-        var encryptedToken = _cryptoService.Encrypt(accessToken);
-        var refreshToken = _jwtService.GenerateRefreshToken();
+        var encryptedToken = cryptoService.Encrypt(accessToken);
+        var refreshToken = jwtService.GenerateRefreshToken();
 
-        var user = await _usersStore.FindByIdAsync(gitHubUser.Id) ?? new User
+        var user = await usersStore.FindByIdAsync(gitHubUser.Id) ?? new User
         {
             UserId = gitHubUser.Id,
             CreatedAt = DateTimeOffset.UtcNow
@@ -83,10 +71,10 @@ public class AuthController : ApiController
         user.RefreshToken = refreshToken;
         user.UpdatedAt = DateTimeOffset.UtcNow;
 
-        await _usersStore.SaveAsync(user);
+        await usersStore.SaveAsync(user);
 
-        var jwtToken = _jwtService.GenerateAccessToken(user);
-        var expiresIn = 3600;
+        var jwtToken = jwtService.GenerateAccessToken(user);
+        const int expiresIn = 3600;
 
         return Content(GenerateSuccessHtml(jwtToken, refreshToken, expiresIn), "text/html");
     }
@@ -99,7 +87,7 @@ public class AuthController : ApiController
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
 
-        var user = await _usersStore.FindByIdAsync(userId);
+        var user = await usersStore.FindByIdAsync(userId);
         if (user == null)
             return NotFound(new { error = "User not found" });
 
@@ -118,16 +106,16 @@ public class AuthController : ApiController
         if (string.IsNullOrEmpty(request.RefreshToken))
             return BadRequest(new { error = "Refresh token required" });
 
-        var user = await _usersStore.FindByRefreshTokenAsync(request.RefreshToken);
+        var user = await usersStore.FindByRefreshTokenAsync(request.RefreshToken);
         if (user == null)
             return Unauthorized(new { error = "Invalid refresh token" });
 
-        var newAccessToken = _jwtService.GenerateAccessToken(user);
-        var newRefreshToken = _jwtService.GenerateRefreshToken();
+        var newAccessToken = jwtService.GenerateAccessToken(user);
+        var newRefreshToken = jwtService.GenerateRefreshToken();
 
         user.RefreshToken = newRefreshToken;
         user.UpdatedAt = DateTimeOffset.UtcNow;
-        await _usersStore.SaveAsync(user);
+        await usersStore.SaveAsync(user);
 
         return Ok(new
         {

@@ -7,7 +7,7 @@ public abstract class Feature
 {
     private readonly Dictionary<Type, Type> _dependencies = new();
     private readonly Dictionary<Type, Func<IServiceProvider, object>> _settings = new();
-    private readonly List<Type> _settingsTypes = new();
+    private readonly List<Type> _settingsTypes = [];
 
     protected void AddDependency<TInterface, TImplementation>() where TImplementation : class, TInterface
     {

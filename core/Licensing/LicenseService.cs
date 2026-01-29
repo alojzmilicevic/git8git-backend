@@ -2,15 +2,8 @@ using core.Licensing.Models;
 
 namespace core.Licensing;
 
-public class LicenseService : ILicenseService
+public abstract class LicenseService(IDomainsStore domainsStore) : ILicenseService
 {
-    private readonly IDomainsStore _domainsStore;
-
-    public LicenseService(IDomainsStore domainsStore)
-    {
-        _domainsStore = domainsStore;
-    }
-
     public async Task<LicenseValidationResult> ValidateAsync(string domain, string licenseKey)
     {
         if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(licenseKey))
@@ -19,7 +12,7 @@ public class LicenseService : ILicenseService
         }
 
         var normalizedDomain = NormalizeDomain(domain);
-        var stored = await _domainsStore.FindByDomainAsync(normalizedDomain);
+        var stored = await domainsStore.FindByDomainAsync(normalizedDomain);
 
         if (stored == null)
         {

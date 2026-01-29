@@ -3,25 +3,19 @@ using core.Storage.Dynamo;
 
 namespace core.Licensing;
 
-public class DomainsStore : IDomainsStore
+public abstract class DomainsStore(IDynamoDb dynamoDb) : IDomainsStore
 {
-    private readonly IDynamoDb _dynamoDb;
-
-    public DomainsStore(IDynamoDb dynamoDb)
-    {
-        _dynamoDb = dynamoDb;
-    }
-
     public async Task<Domain?> FindByDomainAsync(string domain)
     {
         var normalized = NormalizeDomain(domain);
-        return await _dynamoDb.Context.LoadAsync<Domain>(normalized);
+        return await dynamoDb.Context.LoadAsync<Domain>(normalized);
     }
 
     public async Task<Domain?> FindByLicenseKeyAsync(string licenseKey)
     {
-        var search = _dynamoDb.Context.ScanAsync<Domain>(
-            new[] { new Amazon.DynamoDBv2.DataModel.ScanCondition("LicenseKey", Amazon.DynamoDBv2.DocumentModel.ScanOperator.Equal, licenseKey) });
+        var search = dynamoDb.Context.ScanAsync<Domain>(
+            [new Amazon.DynamoDBv2.DataModel.ScanCondition("LicenseKey", Amazon.DynamoDBv2.DocumentModel.ScanOperator.Equal, licenseKey)
+            ]);
         var results = await search.GetRemainingAsync();
         return results.FirstOrDefault();
     }
@@ -29,13 +23,13 @@ public class DomainsStore : IDomainsStore
     public async Task SaveAsync(Domain domain)
     {
         domain.DomainName = NormalizeDomain(domain.DomainName);
-        await _dynamoDb.Context.SaveAsync(domain);
+        await dynamoDb.Context.SaveAsync(domain);
     }
 
     public async Task DeleteAsync(string domain)
     {
         var normalized = NormalizeDomain(domain);
-        await _dynamoDb.Context.DeleteAsync<Domain>(normalized);
+        await dynamoDb.Context.DeleteAsync<Domain>(normalized);
     }
 
     private static string NormalizeDomain(string domain)

@@ -5,23 +5,17 @@ using Octokit;
 
 namespace core.GitHub;
 
-public class GitHubService : IGitHubService
+public abstract class GitHubService(GitHubSettings settings) : IGitHubService
 {
-    private readonly GitHubSettings _settings;
     private const string Scopes = "repo,read:user,user:email";
-
-    public GitHubService(GitHubSettings settings)
-    {
-        _settings = settings;
-    }
 
     public string GetAuthorizationUrl(string state)
     {
-        var request = new OauthLoginRequest(_settings.ClientId)
+        var request = new OauthLoginRequest(settings.ClientId)
         {
             Scopes = { "repo", "read:user", "user:email" },
             State = state,
-            RedirectUri = new Uri(_settings.CallbackUrl)
+            RedirectUri = new Uri(settings.CallbackUrl)
         };
 
         var client = new GitHubClient(new ProductHeaderValue("Git8Git"));
@@ -31,7 +25,7 @@ public class GitHubService : IGitHubService
     public async Task<string> ExchangeCodeForTokenAsync(string code)
     {
         var client = new GitHubClient(new ProductHeaderValue("Git8Git"));
-        var request = new OauthTokenRequest(_settings.ClientId, _settings.ClientSecret, code);
+        var request = new OauthTokenRequest(settings.ClientId, settings.ClientSecret, code);
         var token = await client.Oauth.CreateAccessToken(request);
         return token.AccessToken;
     }
