@@ -13,22 +13,8 @@
   <component name="ChangeListManager">
     <list default="true" id="131bf973-2f01-44b3-9245-347a1227f49a" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.git8git-backend/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.git8git-backend/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/ApiController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/api/ApiController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/Main.cs" beforeDir="false" afterPath="$PROJECT_DIR$/api/Main.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/Properties/launchSettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/api/Properties/launchSettings.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/V1/AuthController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/api/V1/AuthController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/V1/GitHubController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/api/V1/GitHubController.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/V1/LicensesController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/api/V1/LicensesController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/api.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/api/api.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/appsettings.Development.json" beforeDir="false" afterPath="$PROJECT_DIR$/api/appsettings.Development.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/appsettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/api/appsettings.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/Auth/CryptoService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Auth/CryptoService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/Auth/JwtService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Auth/JwtService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/Feature.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Feature.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/GitHub/GitHubService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/GitHub/GitHubService.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/Licensing/DomainsStore.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Licensing/DomainsStore.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/Licensing/LicenseService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Licensing/LicenseService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/Users/UsersStore.cs" beforeDir="false" afterPath="$PROJECT_DIR$/core/Users/UsersStore.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -188,7 +174,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1769677518592</updated>
-      <workItem from="1769677519837" duration="9449000" />
+      <workItem from="1769677519837" duration="10324000" />
     </task>
     <servers />
   </component>

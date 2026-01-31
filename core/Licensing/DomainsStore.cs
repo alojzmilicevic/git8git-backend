@@ -3,7 +3,7 @@ using core.Storage.Dynamo;
 
 namespace core.Licensing;
 
-public abstract class DomainsStore(IDynamoDb dynamoDb) : IDomainsStore
+public class DomainsStore(IDynamoDb dynamoDb) : IDomainsStore
 {
     public async Task<Domain?> FindByDomainAsync(string domain)
     {
