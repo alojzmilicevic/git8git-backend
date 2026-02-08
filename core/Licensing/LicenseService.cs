@@ -2,7 +2,7 @@ using core.Licensing.Models;
 
 namespace core.Licensing;
 
-public abstract class LicenseService(IDomainsStore domainsStore) : ILicenseService
+public class LicenseService(IDomainsStore domainsStore) : ILicenseService
 {
     public async Task<LicenseValidationResult> ValidateAsync(string domain, string licenseKey)
     {

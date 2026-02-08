@@ -3,7 +3,7 @@ using core.Users.Models;
 
 namespace core.Users;
 
-public abstract class UsersStore(IDynamoDb dynamoDb) : IUsersStore
+public class UsersStore(IDynamoDb dynamoDb) : IUsersStore
 {
     public async Task<User?> FindByIdAsync(string userId)
     {

@@ -5,7 +5,7 @@ using Octokit;
 
 namespace core.GitHub;
 
-public abstract class GitHubService(GitHubSettings settings) : IGitHubService
+public class GitHubService(GitHubSettings settings) : IGitHubService
 {
     private const string Scopes = "repo,read:user,user:email";
 

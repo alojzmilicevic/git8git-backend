@@ -7,12 +7,12 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace core.Auth;
 
-public abstract class JwtService : IJwtService
+public class JwtService : IJwtService
 {
     private readonly AuthSettings _settings;
     private readonly SymmetricSecurityKey _signingKey;
 
-    protected JwtService(AuthSettings settings)
+    public JwtService(AuthSettings settings)
     {
         _settings = settings;
         _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.JwtSecret));
