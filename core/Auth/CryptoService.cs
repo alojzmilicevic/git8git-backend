@@ -3,6 +3,12 @@ using System.Text;
 
 namespace core.Auth;
 
+public interface ICryptoService
+{
+    string Encrypt(string plainText);
+    string Decrypt(string encryptedText);
+}
+
 public class CryptoService(AuthSettings settings) : ICryptoService
 {
     private readonly byte[] _key = SHA256.HashData(Encoding.UTF8.GetBytes(settings.EncryptionKey));

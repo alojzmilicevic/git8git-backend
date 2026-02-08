@@ -3,6 +3,14 @@ using core.Storage.Dynamo;
 
 namespace core.Licensing;
 
+public interface IDomainsStore
+{
+    Task<Domain?> FindByDomainAsync(string domain);
+    Task<Domain?> FindByLicenseKeyAsync(string licenseKey);
+    Task SaveAsync(Domain domain);
+    Task DeleteAsync(string domain);
+}
+
 public class DomainsStore(IDynamoDb dynamoDb) : IDomainsStore
 {
     public async Task<Domain?> FindByDomainAsync(string domain)
