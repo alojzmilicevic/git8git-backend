@@ -1,4 +1,7 @@
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using core.GitHub.Models;
 using core.Users.Models;
 using Octokit;
@@ -30,13 +33,13 @@ public class GitHubService(GitHubSettings settings) : IGitHubService
             RedirectUri = new Uri(redirectUri ?? settings.CallbackUrl)
         };
 
-        var client = new GitHubClient(new ProductHeaderValue("Git8Git"));
+        var client = new GitHubClient(new Octokit.ProductHeaderValue("Git8Git"));
         return client.Oauth.GetGitHubLoginUrl(request).ToString();
     }
 
     public async Task<string> ExchangeCodeForTokenAsync(string code)
     {
-        var client = new GitHubClient(new ProductHeaderValue("Git8Git"));
+        var client = new GitHubClient(new Octokit.ProductHeaderValue("Git8Git"));
         var request = new OauthTokenRequest(settings.ClientId, settings.ClientSecret, code);
         var token = await client.Oauth.CreateAccessToken(request);
         return token.AccessToken;
@@ -197,79 +200,160 @@ public class GitHubService(GitHubSettings settings) : IGitHubService
     }
 
     public async Task<MultiFileCommitResult> CommitMultipleFilesAsync(
-        string accessToken, string owner, string repo, MultiFileCommitRequest request)
+        string accessToken,
+        string owner,
+        string repo,
+        MultiFileCommitRequest request)
     {
-        var client = CreateClient(accessToken);
-        var branch = request.Branch;
-
-        if (string.IsNullOrEmpty(branch))
+        try
         {
-            var repository = await client.Repository.Get(owner, repo);
-            branch = repository.DefaultBranch;
-        }
+            var client = CreateClient(accessToken);
+            var branch = request.Branch;
 
-        // Get the latest commit on the branch
-        var reference = await client.Git.Reference.Get(owner, repo, $"heads/{branch}");
-        var baseCommitSha = reference.Object.Sha;
-        var baseCommit = await client.Git.Commit.Get(owner, repo, baseCommitSha);
-        var baseTreeSha = baseCommit.Tree.Sha;
-
-        // Build a new tree with all the file actions
-        var newTree = new NewTree { BaseTree = baseTreeSha };
-
-        foreach (var action in request.Actions)
-        {
-            if (action.Action == "delete")
+            if (string.IsNullOrEmpty(branch))
             {
-                newTree.Tree.Add(new NewTreeItem
-                {
-                    Path = action.Path,
-                    Mode = "100644",
-                    Type = TreeType.Blob,
-                    Sha = null // null SHA = delete
-                });
+                var repository = await client.Repository.Get(owner, repo);
+                branch = repository.DefaultBranch;
             }
-            else
+
+            // Get the latest commit on the branch
+            var reference = await client.Git.Reference.Get(owner, repo, $"heads/{branch}");
+            var baseCommitSha = reference.Object.Sha;
+
+            var baseCommit = await client.Git.Commit.Get(owner, repo, baseCommitSha);
+            var baseTreeSha = baseCommit.Tree.Sha;
+
+            // Build a new tree with all the file actions
+            var newTree = new NewTree { BaseTree = baseTreeSha };
+
+            foreach (var action in request.Actions)
             {
-                // create_or_update: create a blob first
-                var blob = new NewBlob
+                if (action.Action == "delete")
                 {
-                    Content = action.Content,
-                    Encoding = EncodingType.Utf8
-                };
-                var blobResult = await client.Git.Blob.Create(owner, repo, blob);
+                    newTree.Tree.Add(new NewTreeItem
+                    {
+                        Path = action.Path,
+                        Mode = "100644",
+                        Type = TreeType.Blob,
+                        Sha = null // null SHA = delete
+                    });
+                }
+                else
+                {
+                    // create_or_update: create a blob first
+                    var blob = new NewBlob
+                    {
+                        Content = action.Content,
+                        Encoding = EncodingType.Utf8
+                    };
 
-                newTree.Tree.Add(new NewTreeItem
-                {
-                    Path = action.Path,
-                    Mode = "100644",
-                    Type = TreeType.Blob,
-                    Sha = blobResult.Sha
-                });
+                    var blobResult = await client.Git.Blob.Create(owner, repo, blob);
+
+                    newTree.Tree.Add(new NewTreeItem
+                    {
+                        Path = action.Path,
+                        Mode = "100644",
+                        Type = TreeType.Blob,
+                        Sha = blobResult.Sha
+                    });
+                }
             }
+
+            // Create the new tree via raw HTTP so that "sha": null for deletes is preserved
+            var treeSha = await CreateTreeWithHttpAsync(accessToken, owner, repo, baseTreeSha, newTree);
+
+            // Create the commit
+            var newCommit = new NewCommit(request.Message, treeSha, baseCommitSha);
+            var commitResult = await client.Git.Commit.Create(owner, repo, newCommit);
+
+            // Update the branch reference
+            await client.Git.Reference.Update(
+                owner,
+                repo,
+                $"heads/{branch}",
+                new ReferenceUpdate(commitResult.Sha)
+            );
+
+            return new MultiFileCommitResult
+            {
+                CommitSha = commitResult.Sha
+            };
         }
-
-        var treeResult = await client.Git.Tree.Create(owner, repo, newTree);
-
-        // Create the commit
-        var newCommit = new NewCommit(request.Message, treeResult.Sha, baseCommitSha);
-        var commitResult = await client.Git.Commit.Create(owner, repo, newCommit);
-
-        // Update the branch reference
-        await client.Git.Reference.Update(owner, repo, $"heads/{branch}", new ReferenceUpdate(commitResult.Sha));
-
-        return new MultiFileCommitResult
+        catch (Octokit.RateLimitExceededException ex)
         {
-            CommitSha = commitResult.Sha
-        };
+            throw new Exception(
+                $"GitHub rate limit exceeded. Resets at {ex.Reset}.",
+                ex);
+        }
+        catch (Octokit.ApiValidationException ex)
+        {
+            throw new Exception(
+                $"GitHub validation failed: {string.Join(", ", ex.ApiError.Errors.Select(e => e.Message))}",
+                ex);
+        }
+        catch (Octokit.ApiException ex)
+        {
+            throw new Exception(
+                $"GitHub API error ({ex.StatusCode}): {ex.Message}",
+                ex);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(
+                $"Unexpected error committing files: {ex.Message}",
+                ex);
+        }
     }
+
 
     private static GitHubClient CreateClient(string accessToken)
     {
-        var client = new GitHubClient(new ProductHeaderValue("Git8Git"))
+        var client = new GitHubClient(new Octokit.ProductHeaderValue("Git8Git"))
         {
             Credentials = new Credentials(accessToken)
         };
         return client;
+    }
+
+    private static async Task<string> CreateTreeWithHttpAsync(
+        string accessToken,
+        string owner,
+        string repo,
+        string baseTreeSha,
+        NewTree newTree)
+    {
+        using var httpClient = new HttpClient();
+
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Git8Git");
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+
+        var requestBody = new
+        {
+            base_tree = baseTreeSha,
+            tree = newTree.Tree.Select(item => new
+            {
+                path = item.Path,
+                mode = item.Mode,
+                type = "blob",
+                sha = item.Sha
+            })
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var url = $"https://api.github.com/repos/{owner}/{repo}/git/trees";
+        using var response = await httpClient.PostAsync(url, content);
+        response.EnsureSuccessStatusCode();
+
+        await using var responseStream = await response.Content.ReadAsStreamAsync();
+        using var doc = await JsonDocument.ParseAsync(responseStream);
+        var sha = doc.RootElement.GetProperty("sha").GetString();
+
+        if (string.IsNullOrEmpty(sha))
+            throw new InvalidOperationException("GitHub tree response did not contain a SHA.");
+
+        return sha;
     }
 }
