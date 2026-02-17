@@ -1,4 +1,3 @@
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -279,19 +278,19 @@ public class GitHubService(GitHubSettings settings) : IGitHubService
                 CommitSha = commitResult.Sha
             };
         }
-        catch (Octokit.RateLimitExceededException ex)
+        catch (RateLimitExceededException ex)
         {
             throw new Exception(
                 $"GitHub rate limit exceeded. Resets at {ex.Reset}.",
                 ex);
         }
-        catch (Octokit.ApiValidationException ex)
+        catch (ApiValidationException ex)
         {
             throw new Exception(
                 $"GitHub validation failed: {string.Join(", ", ex.ApiError.Errors.Select(e => e.Message))}",
                 ex);
         }
-        catch (Octokit.ApiException ex)
+        catch (ApiException ex)
         {
             throw new Exception(
                 $"GitHub API error ({ex.StatusCode}): {ex.Message}",
