@@ -7,26 +7,27 @@ namespace core.GitHub;
 
 public interface IGitHubService
 {
-    string GetAuthorizationUrl(string state);
+    string GetAuthorizationUrl(string state, string? redirectUri = null);
     Task<string> ExchangeCodeForTokenAsync(string code);
     Task<GitHubUser> GetUserAsync(string accessToken);
     Task<IEnumerable<RepoDto>> ListReposAsync(string accessToken);
     Task<IEnumerable<BranchDto>> ListBranchesAsync(string accessToken, string owner, string repo);
     Task<FileContentDto?> GetFileContentAsync(string accessToken, string owner, string repo, string path, string? gitRef);
     Task<FileUpdateResultDto> CreateOrUpdateFileAsync(string accessToken, string owner, string repo, string path, string content, string message, string? branch, string? sha);
+    Task<MultiFileCommitResult> CommitMultipleFilesAsync(string accessToken, string owner, string repo, MultiFileCommitRequest request);
 }
 
 public class GitHubService(GitHubSettings settings) : IGitHubService
 {
     private const string Scopes = "repo,read:user,user:email";
 
-    public string GetAuthorizationUrl(string state)
+    public string GetAuthorizationUrl(string state, string? redirectUri = null)
     {
         var request = new OauthLoginRequest(settings.ClientId)
         {
             Scopes = { "repo", "read:user", "user:email" },
             State = state,
-            RedirectUri = new Uri(settings.CallbackUrl)
+            RedirectUri = new Uri(redirectUri ?? settings.CallbackUrl)
         };
 
         var client = new GitHubClient(new ProductHeaderValue("Git8Git"));
@@ -192,6 +193,74 @@ public class GitHubService(GitHubSettings settings) : IGitHubService
             Changed = true,
             Sha = result.Content.Sha,
             Path = result.Content.Path
+        };
+    }
+
+    public async Task<MultiFileCommitResult> CommitMultipleFilesAsync(
+        string accessToken, string owner, string repo, MultiFileCommitRequest request)
+    {
+        var client = CreateClient(accessToken);
+        var branch = request.Branch;
+
+        if (string.IsNullOrEmpty(branch))
+        {
+            var repository = await client.Repository.Get(owner, repo);
+            branch = repository.DefaultBranch;
+        }
+
+        // Get the latest commit on the branch
+        var reference = await client.Git.Reference.Get(owner, repo, $"heads/{branch}");
+        var baseCommitSha = reference.Object.Sha;
+        var baseCommit = await client.Git.Commit.Get(owner, repo, baseCommitSha);
+        var baseTreeSha = baseCommit.Tree.Sha;
+
+        // Build a new tree with all the file actions
+        var newTree = new NewTree { BaseTree = baseTreeSha };
+
+        foreach (var action in request.Actions)
+        {
+            if (action.Action == "delete")
+            {
+                newTree.Tree.Add(new NewTreeItem
+                {
+                    Path = action.Path,
+                    Mode = "100644",
+                    Type = TreeType.Blob,
+                    Sha = null // null SHA = delete
+                });
+            }
+            else
+            {
+                // create_or_update: create a blob first
+                var blob = new NewBlob
+                {
+                    Content = action.Content,
+                    Encoding = EncodingType.Utf8
+                };
+                var blobResult = await client.Git.Blob.Create(owner, repo, blob);
+
+                newTree.Tree.Add(new NewTreeItem
+                {
+                    Path = action.Path,
+                    Mode = "100644",
+                    Type = TreeType.Blob,
+                    Sha = blobResult.Sha
+                });
+            }
+        }
+
+        var treeResult = await client.Git.Tree.Create(owner, repo, newTree);
+
+        // Create the commit
+        var newCommit = new NewCommit(request.Message, treeResult.Sha, baseCommitSha);
+        var commitResult = await client.Git.Commit.Create(owner, repo, newCommit);
+
+        // Update the branch reference
+        await client.Git.Reference.Update(owner, repo, $"heads/{branch}", new ReferenceUpdate(commitResult.Sha));
+
+        return new MultiFileCommitResult
+        {
+            CommitSha = commitResult.Sha
         };
     }
 

@@ -1,4 +1,4 @@
-namespace api.Core.Middlewares;
+namespace extension_api.Core.Middlewares;
 
 public class RequestIdMiddleware
 {

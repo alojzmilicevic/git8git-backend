@@ -32,5 +32,11 @@ public class FakeDomainsStore : IDomainsStore
         return Task.CompletedTask;
     }
 
+    public Task<List<Domain>> FindByUserIdAsync(string userId)
+    {
+        var domains = _domains.Values.Where(d => d.UserId == userId).ToList();
+        return Task.FromResult(domains);
+    }
+
     public void Clear() => _domains.Clear();
 }

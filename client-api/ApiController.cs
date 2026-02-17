@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace api;
+namespace client_api;
 
 [ApiController]
 public abstract class ApiController : ControllerBase

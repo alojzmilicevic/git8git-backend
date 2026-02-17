@@ -7,6 +7,7 @@ public interface IDomainsStore
 {
     Task<Domain?> FindByDomainAsync(string domain);
     Task<Domain?> FindByLicenseKeyAsync(string licenseKey);
+    Task<List<Domain>> FindByUserIdAsync(string userId);
     Task SaveAsync(Domain domain);
     Task DeleteAsync(string domain);
 }
@@ -26,6 +27,14 @@ public class DomainsStore(IDynamoDb dynamoDb) : IDomainsStore
             ]);
         var results = await search.GetRemainingAsync();
         return results.FirstOrDefault();
+    }
+
+    public async Task<List<Domain>> FindByUserIdAsync(string userId)
+    {
+        var search = dynamoDb.Context.ScanAsync<Domain>(
+            [new Amazon.DynamoDBv2.DataModel.ScanCondition("UserId", Amazon.DynamoDBv2.DocumentModel.ScanOperator.Equal, userId)
+            ]);
+        return await search.GetRemainingAsync();
     }
 
     public async Task SaveAsync(Domain domain)

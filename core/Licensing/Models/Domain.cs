@@ -12,6 +12,9 @@ public class Domain
     [DynamoDBProperty]
     public string LicenseKey { get; set; } = string.Empty;
 
+    [DynamoDBProperty]
+    public string UserId { get; set; } = string.Empty;
+
     [DynamoDBProperty(typeof(EnumConverter<DomainStatus>))]
     public DomainStatus Status { get; set; } = DomainStatus.Active;
 

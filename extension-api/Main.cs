@@ -1,8 +1,8 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using api.Core;
-using api.Core.Middlewares;
+using extension_api.Core;
+using extension_api.Core.Middlewares;
 using core;
 using core.Auth;
 using core.GitHub;

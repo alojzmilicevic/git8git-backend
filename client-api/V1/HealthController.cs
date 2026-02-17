@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace api.V1;
+namespace client_api.V1;
 
 [Route("health")]
 public class HealthController : ApiController

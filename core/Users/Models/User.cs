@@ -19,6 +19,9 @@ public class User
     public string? AvatarUrl { get; set; }
 
     [DynamoDBProperty]
+    public string? PasswordHash { get; set; }
+
+    [DynamoDBProperty]
     public string AccessToken { get; set; } = string.Empty;
 
     [DynamoDBProperty]
