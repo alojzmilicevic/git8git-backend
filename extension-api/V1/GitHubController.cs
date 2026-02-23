@@ -77,50 +77,57 @@ public class GitHubController(
         return Ok(branches);
     }
 
-    [HttpGet("repos/{owner}/{repo}/contents/{**path}")]
-    public async Task<IActionResult> GetContents(string owner, string repo, string path, [FromQuery(Name = "ref")] string? gitRef)
-    {
-        var token = await GetDecryptedAccessToken();
-        if (token == null)
-            return Unauthorized();
-
-        var content = await gitHubService.GetFileContentAsync(token, owner, repo, path, gitRef);
-        if (content == null)
-            return NotFoundResponse("File or directory not found");
-
-        return Ok(content);
-    }
-
-    [HttpPut("repos/{owner}/{repo}/contents/{**path}")]
-    public async Task<IActionResult> UpdateContents(
-        string owner, string repo, string path,
-        [FromBody] UpdateFileRequest request)
-    {
-        var token = await GetDecryptedAccessToken();
-        if (token == null)
-            return Unauthorized();
-
-        var result = await gitHubService.CreateOrUpdateFileAsync(
-            token, owner, repo, path,
-            request.Content, request.Message, request.Branch, request.Sha);
-
-        return Ok(result);
-    }
-
-    [HttpPost("repos/{owner}/{repo}/commits")]
-    public async Task<IActionResult> CommitMultipleFiles(
+    [HttpPost("repos/{owner}/{repo}/workflows/push")]
+    public async Task<IActionResult> PushWorkflow(
         string owner, string repo,
-        [FromBody] MultiFileCommitRequest request)
+        [FromBody] PushWorkflowRequest request)
     {
         var token = await GetDecryptedAccessToken();
         if (token == null)
             return Unauthorized();
 
-        if (request.Actions.Count == 0)
-            return BadRequestResponse("At least one action is required");
-
-        var result = await gitHubService.CommitMultipleFilesAsync(token, owner, repo, request);
+        var result = await gitHubService.PushWorkflowAsync(token, owner, repo, request);
         return Ok(result);
+    }
+
+    [HttpGet("repos/{owner}/{repo}/workflows/{workflowId}")]
+    public async Task<IActionResult> PullWorkflow(
+        string owner, string repo, string workflowId,
+        [FromQuery] string? branch)
+    {
+        var token = await GetDecryptedAccessToken();
+        if (token == null)
+            return Unauthorized();
+
+        var result = await gitHubService.PullWorkflowAsync(token, owner, repo, workflowId, branch);
+        if (!result.Found)
+            return NotFoundResponse("Workflow not found in repository");
+
+        return Ok(result);
+    }
+
+    [HttpDelete("repos/{owner}/{repo}/workflows/{workflowId}")]
+    public async Task<IActionResult> DeleteWorkflow(
+        string owner, string repo, string workflowId,
+        [FromQuery] string branch, [FromQuery] string? workflowName)
+    {
+        var token = await GetDecryptedAccessToken();
+        if (token == null)
+            return Unauthorized();
+
+        try
+        {
+            var result = await gitHubService.DeleteWorkflowAsync(token, owner, repo, workflowId, new DeleteWorkflowRequest
+            {
+                Branch = branch,
+                WorkflowName = workflowName ?? ""
+            });
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFoundResponse(ex.Message);
+        }
     }
 
     private async Task<string?> GetDecryptedAccessToken()
@@ -142,10 +149,3 @@ public class TokenRequest
     public string Code { get; set; } = string.Empty;
 }
 
-public class UpdateFileRequest
-{
-    public string Content { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-    public string? Branch { get; set; }
-    public string? Sha { get; set; }
-}

@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using core.GitHub.Models;
 using core.Users.Models;
 using Octokit;
@@ -17,6 +18,9 @@ public interface IGitHubService
     Task<FileContentDto?> GetFileContentAsync(string accessToken, string owner, string repo, string path, string? gitRef);
     Task<FileUpdateResultDto> CreateOrUpdateFileAsync(string accessToken, string owner, string repo, string path, string content, string message, string? branch, string? sha);
     Task<MultiFileCommitResult> CommitMultipleFilesAsync(string accessToken, string owner, string repo, MultiFileCommitRequest request);
+    Task<PushWorkflowResult> PushWorkflowAsync(string accessToken, string owner, string repo, PushWorkflowRequest request);
+    Task<PullWorkflowResult> PullWorkflowAsync(string accessToken, string owner, string repo, string workflowId, string? branch);
+    Task<DeleteWorkflowResult> DeleteWorkflowAsync(string accessToken, string owner, string repo, string workflowId, DeleteWorkflowRequest request);
 }
 
 public class GitHubService(GitHubSettings settings) : IGitHubService
@@ -304,6 +308,155 @@ public class GitHubService(GitHubSettings settings) : IGitHubService
         }
     }
 
+
+    private const string IndexPath = "workflows/index.json";
+
+    private static string SanitizeFilename(string name) =>
+        name.Replace("/", "-").Trim();
+
+    private async Task<(JsonObject index, string? content)> GetWorkflowIndexAsync(
+        string accessToken, string owner, string repo, string? branch)
+    {
+        var file = await GetFileContentAsync(accessToken, owner, repo, IndexPath, branch);
+        if (file == null)
+            return (new JsonObject(), null);
+
+        var index = JsonNode.Parse(file.Content!)?.AsObject() ?? new JsonObject();
+        return (index, file.Content);
+    }
+
+    public async Task<PushWorkflowResult> PushWorkflowAsync(
+        string accessToken, string owner, string repo, PushWorkflowRequest request)
+    {
+        var (index, oldIndexContent) = await GetWorkflowIndexAsync(accessToken, owner, repo, request.Branch);
+
+        // Determine filename
+        var existingEntry = index[request.WorkflowId]?.GetValue<string>();
+        string filename;
+
+        if (!string.IsNullOrEmpty(existingEntry))
+        {
+            filename = existingEntry;
+        }
+        else
+        {
+            filename = $"{SanitizeFilename(request.WorkflowName)}.json";
+            var existingFilenames = new HashSet<string>();
+            foreach (var kvp in index)
+            {
+                if (kvp.Value is JsonValue val)
+                    existingFilenames.Add(val.GetValue<string>());
+            }
+
+            var counter = 1;
+            var uniqueFilename = filename;
+            while (existingFilenames.Contains(uniqueFilename))
+            {
+                uniqueFilename = $"{SanitizeFilename(request.WorkflowName)}-{counter}.json";
+                counter++;
+            }
+            filename = uniqueFilename;
+        }
+
+        // Check if content changed
+        var workflowPath = $"workflows/{filename}";
+        var existingFile = await GetFileContentAsync(accessToken, owner, repo, workflowPath, request.Branch);
+        if (existingFile?.Content == request.WorkflowJson)
+        {
+            // Also check if index already has the entry
+            if (!string.IsNullOrEmpty(existingEntry))
+                return new PushWorkflowResult { Changed = false };
+        }
+
+        // Build commit actions
+        var actions = new List<FileAction>
+        {
+            new()
+            {
+                Action = "create_or_update",
+                Path = workflowPath,
+                Content = request.WorkflowJson
+            }
+        };
+
+        // Update index
+        index[request.WorkflowId] = filename;
+        var newIndexContent = JsonSerializer.Serialize(
+            JsonSerializer.Deserialize<Dictionary<string, string>>(index.ToJsonString()),
+            new JsonSerializerOptions { WriteIndented = true });
+
+        if (newIndexContent != oldIndexContent)
+        {
+            actions.Add(new FileAction
+            {
+                Action = "create_or_update",
+                Path = IndexPath,
+                Content = newIndexContent
+            });
+        }
+
+        var result = await CommitMultipleFilesAsync(accessToken, owner, repo, new MultiFileCommitRequest
+        {
+            Message = request.Message,
+            Branch = request.Branch,
+            Actions = actions
+        });
+
+        return new PushWorkflowResult
+        {
+            CommitSha = result.CommitSha,
+            Changed = true
+        };
+    }
+
+    public async Task<PullWorkflowResult> PullWorkflowAsync(
+        string accessToken, string owner, string repo, string workflowId, string? branch)
+    {
+        var (index, _) = await GetWorkflowIndexAsync(accessToken, owner, repo, branch);
+        var filename = index[workflowId]?.GetValue<string>();
+
+        if (string.IsNullOrEmpty(filename))
+            return new PullWorkflowResult { Found = false };
+
+        var file = await GetFileContentAsync(accessToken, owner, repo, $"workflows/{filename}", branch);
+        if (file == null)
+            return new PullWorkflowResult { Found = false };
+
+        return new PullWorkflowResult
+        {
+            Content = file.Content,
+            Found = true
+        };
+    }
+
+    public async Task<DeleteWorkflowResult> DeleteWorkflowAsync(
+        string accessToken, string owner, string repo, string workflowId, DeleteWorkflowRequest request)
+    {
+        var (index, _) = await GetWorkflowIndexAsync(accessToken, owner, repo, request.Branch);
+        var filename = index[workflowId]?.GetValue<string>();
+
+        if (string.IsNullOrEmpty(filename))
+            throw new KeyNotFoundException($"Workflow '{workflowId}' not found in repository index");
+
+        index.Remove(workflowId);
+
+        var newIndexContent = JsonSerializer.Serialize(
+            JsonSerializer.Deserialize<Dictionary<string, string>>(index.ToJsonString()),
+            new JsonSerializerOptions { WriteIndented = true });
+
+        var result = await CommitMultipleFilesAsync(accessToken, owner, repo, new MultiFileCommitRequest
+        {
+            Message = $"Delete workflow {request.WorkflowName}",
+            Branch = request.Branch,
+            Actions =
+            [
+                new FileAction { Action = "delete", Path = $"workflows/{filename}" },
+                new FileAction { Action = "create_or_update", Path = IndexPath, Content = newIndexContent }
+            ]
+        });
+
+        return new DeleteWorkflowResult { CommitSha = result.CommitSha };
+    }
 
     private static GitHubClient CreateClient(string accessToken)
     {
